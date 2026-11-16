@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="description" content="Kvartira Boshqaruv — ijarachilar, to'lovlar va xarajatlarni boshqarish">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <title>Kvartira Boshqaruv</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header class="app-header">
+  <div class="header-inner">
+    <h1 class="app-title" id="app-title">🏠 Kvartiralar</h1>
+    <div class="header-actions">
+      <button class="icon-btn" id="theme-toggle" title="Kunduz/tun">🌙</button>
+      <button class="icon-btn" id="btn-back" title="Orqaga" style="display:none" onclick="goBack()">←</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     ASOSIY KONTENT
+     ============================================================ -->
+<main class="app-main" id="app-main">
+
+  <!-- ==========================================================
+       EKRAN 1: BOSH SAHIFA (Kvartiralar)
+       ========================================================== -->
+  <section class="screen active" id="screen-home">
+
+    <!-- Umumiy statistika -->
+    <div class="stats-grid" id="home-stats">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-rooms">—</div>
+        <div class="stat-label">Kvartiralar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-tenants">—</div>
+        <div class="stat-label">Ijarachilar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-debtors">—</div>
+        <div class="stat-label">Qarzdor</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-income">—</div>
+        <div class="stat-label">Oylik tushum</div>
+      </div>
+    </div>
+
+    <!-- Diqqat talab qiladi -->
+    <div class="alert-box" id="home-alert" style="display:none">
+      <div class="alert-title">🔔 Diqqat talab qiladi</div>
+      <div class="alert-body" id="home-alert-body"></div>
+    </div>
+
+    <!-- Kvartiralar ro'yxati -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Kvartiralar</h2>
+        <button class="btn btn-primary btn-sm" onclick="openRoomForm()">+ Yangi kv</button>
+      </div>
+      <div class="rooms-grid" id="rooms-grid">
+        <div class="empty-state">Yuklanmoqda...</div>
+      </div>
+    </section>
+
+  </section>
+
+  <!-- ==========================================================
+       EKRAN 2: KVARTIRA ICHI (tablar)
+       ========================================================== -->
+  <section class="screen" id="screen-room">
+    <div id="room-content">
+      <!-- app.js to'ldiradi -->
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       EKRAN 3: XARAJATLAR
+       ========================================================== -->
+  <section class="screen" id="screen-expenses">
+    <div class="section-header">
+      <h2>💸 Xarajatlar</h2>
+      <button class="btn btn-primary btn-sm" onclick="openExpenseForm()">+ Qo'shish</button>
+    </div>
+
+    <div class="filter-row">
+      <select id="exp-filter-room" onchange="renderExpenses()">
+        <option value="">Barcha kvartiralar</option>
+      </select>
+      <select id="exp-filter-period" onchange="renderExpenses()">
+        <option value="this-month">Bu oy</option>
+        <option value="last-month">O'tgan oy</option>
+        <option value="this-year">Bu yil</option>
+        <option value="all">Barchasi</option>
+      </select>
+    </div>
+
+    <div class="summary-card" id="exp-summary"></div>
+
+    <div class="expenses-list" id="expenses-list">
+      <div class="empty-state">Yuklanmoqda...</div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       EKRAN 4: TARIX (Audit Log)
+       ========================================================== -->
+  <section class="screen" id="screen-audit">
+    <div class="section-header">
+      <h2>📜 Tarix</h2>
+    </div>
+
+    <div class="filter-row">
+      <select id="audit-filter-type" onchange="renderAudit()">
+        <option value="">Barchasi</option>
+        <option value="tenant">Ijarachilar</option>
+        <option value="payment">To'lovlar</option>
+        <option value="room">Kvartiralar</option>
+        <option value="expense">Xarajatlar</option>
+      </select>
+      <select id="audit-filter-period" onchange="renderAudit()">
+        <option value="this-month">Bu oy</option>
+        <option value="last-month">O'tgan oy</option>
+        <option value="this-year">Bu yil</option>
+        <option value="all">Barchasi</option>
+      </select>
+    </div>
+
+    <div class="audit-list" id="audit-list">
+      <div class="empty-state">Yuklanmoqda...</div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       EKRAN 5: HISOBOT
+       ========================================================== -->
+  <section class="screen" id="screen-report">
+    <div class="section-header">
+      <h2>📊 Hisobot</h2>
+    </div>
+
+    <div class="filter-row">
+      <select id="report-period" onchange="renderReport()">
+        <option value="this-month">Bu oy</option>
+        <option value="last-month">O'tgan oy</option>
+        <option value="this-year">Bu yil</option>
+        <option value="custom">Sana oralig'i</option>
+      </select>
+    </div>
+
+    <div class="report-custom" id="report-custom" style="display:none">
+      <input type="date" id="report-from">
+      <input type="date" id="report-to">
+      <button class="btn btn-primary btn-sm" onclick="renderReport()">Ko'rish</button>
+    </div>
+
+    <div id="report-content">
+      <div class="empty-state">Yuklanmoqda...</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     PASTKI NAVIGATSIYA (mobil uchun)
+     ============================================================ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-screen="home" onclick="switchTab('home')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Kvartiralar</span>
+  </button>
+  <button class="nav-btn" data-screen="expenses" onclick="switchTab('expenses')">
+    <span class="nav-icon">💸</span>
+    <span class="nav-label">Xarajat</span>
+  </button>
+  <button class="nav-btn" data-screen="audit" onclick="switchTab('audit')">
+    <span class="nav-icon">📜</span>
+    <span class="nav-label">Tarix</span>
+  </button>
+  <button class="nav-btn" data-screen="report" onclick="switchTab('report')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Hisobot</span>
+  </button>
+</nav>
+
+<!-- ============================================================
+     MODAL: KVARTIRA FORMASI
+     ============================================================ -->
+<div class="modal" id="room-form-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="room-form-title">Yangi kvartira</h3>
+      <button class="modal-close" onclick="closeModal('room-form-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="room-form" onsubmit="saveRoom(event)">
+        <input type="hidden" id="rf-id">
+
+        <label class="form-field">
+          <span>Kvartira raqami *</span>
+          <input type="text" id="rf-room_number" required placeholder="101 yoki A-12">
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Qavat</span>
+            <input type="number" id="rf-floor" min="0" placeholder="1">
+          </label>
+          <label class="form-field">
+            <span>To'lov kuni</span>
+            <input type="number" id="rf-payment_day" min="1" max="31" value="5">
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Oylik to'lov (so'm)</span>
+          <input type="number" id="rf-monthly_rent" min="0" step="1000" placeholder="1200000">
+        </label>
+
+        <label class="form-field">
+          <span>Izoh</span>
+          <textarea id="rf-notes" rows="2"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('room-form-modal')">Bekor</button>
+          <button type="submit" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: IJARACHI FORMASI
+     ============================================================ -->
+<div class="modal" id="tenant-form-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="tenant-form-title">Yangi ijarachi</h3>
+      <button class="modal-close" onclick="closeModal('tenant-form-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="tenant-form" onsubmit="saveTenant(event)">
+        <input type="hidden" id="tf-id">
+        <input type="hidden" id="tf-room_id">
+
+        <label class="form-field">
+          <span>F.I.Sh *</span>
+          <input type="text" id="tf-full_name" required placeholder="Ali Valiyev">
+        </label>
+
+        <label class="form-field">
+          <span>Telefon</span>
+          <input type="tel" id="tf-phone" placeholder="+998 90 123 45 67">
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Xona (ichida)</span>
+            <input type="text" id="tf-room_in_flat" placeholder="1">
+          </label>
+          <label class="form-field">
+            <span>Karavot</span>
+            <input type="text" id="tf-bed_number" placeholder="1">
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Kelgan sana *</span>
+            <input type="date" id="tf-check_in_date" required>
+          </label>
+          <label class="form-field">
+            <span>Ketish sanasi (ixtiyoriy)</span>
+            <input type="date" id="tf-check_out_date">
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Oylik to'lov (so'm)</span>
+            <input type="number" id="tf-monthly_rent" min="0" step="1000" placeholder="1200000">
+          </label>
+          <label class="form-field">
+            <span>To'lov kuni</span>
+            <input type="number" id="tf-payment_day" min="1" max="31" placeholder="5">
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Izoh</span>
+          <textarea id="tf-notes" rows="2"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('tenant-form-modal')">Bekor</button>
+          <button type="submit" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: TO'LOV FORMASI
+     ============================================================ -->
+<div class="modal" id="payment-form-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="payment-form-title">To'lov</h3>
+      <button class="modal-close" onclick="closeModal('payment-form-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="payment-form" onsubmit="savePayment(event)">
+        <input type="hidden" id="pf-id">
+        <input type="hidden" id="pf-tenant_id">
+
+        <div class="form-info" id="pf-tenant-info"></div>
+
+        <label class="form-field">
+          <span>Oy (YYYY-MM) *</span>
+          <input type="month" id="pf-month" required>
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>To'lanishi kerak</span>
+            <input type="number" id="pf-amount" min="0" step="1000">
+          </label>
+          <label class="form-field">
+            <span>To'landi</span>
+            <input type="number" id="pf-paid_amount" min="0" step="1000">
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Muddat</span>
+            <input type="date" id="pf-due_date">
+          </label>
+          <label class="form-field">
+            <span>To'langan sana</span>
+            <input type="date" id="pf-paid_date">
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Holat</span>
+          <select id="pf-status">
+            <option value="unpaid">To'lanmagan</option>
+            <option value="partial">Qismiy</option>
+            <option value="paid">To'langan</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Izoh</span>
+          <textarea id="pf-notes" rows="2"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('payment-form-modal')">Bekor</button>
+          <button type="submit" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: XARAJAT FORMASI
+     ============================================================ -->
+<div class="modal" id="expense-form-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="expense-form-title">Yangi xarajat</h3>
+      <button class="modal-close" onclick="closeModal('expense-form-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="expense-form" onsubmit="saveExpense(event)">
+        <input type="hidden" id="ef-id">
+
+        <label class="form-field">
+          <span>Kvartira</span>
+          <select id="ef-room_id">
+            <option value="">Umumiy (barcha kvartiralar)</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Kategoriya *</span>
+          <select id="ef-category" required>
+            <option value="remont">🔧 Remont</option>
+            <option value="kommunal">💡 Kommunal</option>
+            <option value="mebel">🪑 Mebel</option>
+            <option value="tozalash">🧹 Tozalash</option>
+            <option value="suv">🚰 Suv</option>
+            <option value="elektr">⚡ Elektr</option>
+            <option value="gaz">🔥 Gaz</option>
+            <option value="internet">🌐 Internet</option>
+            <option value="boshqa">📦 Boshqa</option>
+          </select>
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span>Summa (so'm) *</span>
+            <input type="number" id="ef-amount" min="0" step="1000" required>
+          </label>
+          <label class="form-field">
+            <span>Sana</span>
+            <input type="date" id="ef-expense_date">
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Izoh</span>
+          <textarea id="ef-description" rows="2"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('expense-form-modal')">Bekor</button>
+          <button type="submit" class="btn btn-primary">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: IJARACHI KARTOCHKASI
+     ============================================================ -->
+<div class="modal" id="tenant-card-modal">
+  <div class="modal-content tenant-card-modal">
+    <div class="modal-header">
+      <h3>Ijarachi kartochkasi</h3>
+      <button class="modal-close" onclick="closeModal('tenant-card-modal')">×</button>
+    </div>
+    <div class="modal-body" id="tenant-card-body">
+      <!-- app.js to'ldiradi -->
+    </div>
+    <div class="modal-footer" id="tenant-card-footer">
+      <!-- app.js to'ldiradi -->
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: TASDIQLASH
+     ============================================================ -->
+<div class="modal" id="confirm-modal">
+  <div class="modal-content confirm-modal-content">
+    <div class="modal-header">
+      <h3 id="confirm-title">Tasdiqlash</h3>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message">Davom etasizmi?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Bekor</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" onclick="confirmOk()">Ha</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST
+     ============================================================ -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ============================================================
+     SKRIPTLAR
+     ============================================================ -->
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('SW ro\'yxatdan o\'tkazilmadi:', err);
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
